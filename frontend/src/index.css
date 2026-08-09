@@ -1,0 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --neon-amber: #ffb300;
+  --neon-orange: #ff7a1a;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-ink font-sans text-white antialiased;
+    overflow-x: hidden;
+    margin: 0;
+  }
+
+  /* keyboard focus stays visible, styled to match the palette */
+  :focus-visible {
+    outline: 2px solid var(--neon-amber);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+}
+
+@layer utilities {
+  .text-gradient-accent {
+    @apply bg-gradient-to-r from-amber-300 to-orange-500 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-soft {
+    @apply bg-gradient-to-r from-amber-100 to-orange-200 bg-clip-text text-transparent;
+  }
+}
+
+/* ---- liquid card background: molten orange blobs wandering on black ---- */
+.liquid-blob {
+  position: absolute;
+  width: 60%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  filter: blur(55px);
+  will-change: transform;
+  pointer-events: none;
+}
+.liquid-blob-a {
+  top: -15%;
+  left: -15%;
+  background: radial-gradient(circle at 35% 35%, rgba(255, 179, 0, 0.32), transparent 70%);
+  animation: liquid-a 16s ease-in-out infinite alternate;
+}
+.liquid-blob-b {
+  bottom: -20%;
+  right: -10%;
+  background: radial-gradient(circle at 60% 60%, rgba(255, 122, 26, 0.26), transparent 70%);
+  animation: liquid-b 21s ease-in-out infinite alternate;
+}
+.liquid-blob-c {
+  top: 30%;
+  left: 35%;
+  width: 45%;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 149, 0, 0.18), transparent 70%);
+  animation: liquid-c 26s ease-in-out infinite alternate;
+}
+
+@keyframes liquid-a {
+  0% { transform: translate(0%, 0%) scale(1); }
+  50% { transform: translate(45%, 25%) scale(1.25); }
+  100% { transform: translate(10%, 55%) scale(0.9); }
+}
+@keyframes liquid-b {
+  0% { transform: translate(0%, 0%) scale(1.1); }
+  50% { transform: translate(-35%, -30%) scale(0.85); }
+  100% { transform: translate(-10%, -60%) scale(1.3); }
+}
+@keyframes liquid-c {
+  0% { transform: translate(0%, 0%) scale(0.9); }
+  50% { transform: translate(-30%, 20%) scale(1.2); }
+  100% { transform: translate(25%, -25%) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-blob {
+    animation: none;
+  }
+}

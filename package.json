@@ -1,0 +1,11 @@
+{
+  "name": "rashtriya-rifles",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CivicLens AI — self-contained copy. Runs the React frontend (frontend/) and the Express backend (backend/) from one place.",
+  "scripts": {
+    "backend": "cd backend && node dev-server.js",
+    "frontend": "npm run dev --prefix frontend -- --port 5174",
+    "build": "npm run build --prefix frontend"
+  }
+}
