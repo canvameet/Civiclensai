@@ -11,19 +11,25 @@ import { ApiError } from './api';
 
 const TOKEN_KEY = 'civiclens_token';
 
-/** 'authority' predates the admin panel; it is still treated as privileged. */
-export type Role = 'citizen' | 'authority' | 'admin';
+export type Role = 'citizen' | 'authority' | 'admin' | 'master-admin';
 
 export type User = {
   id: string;
   name: string;
   email: string;
   role: Role;
+  assignedArea?: string | null;
+  assignedDept?: string | null;
 };
 
 /** Single source of truth for "may see the admin panel". */
 export function isAdmin(user: User | null): boolean {
-  return user?.role === 'admin' || user?.role === 'authority';
+  return user?.role === 'admin' || user?.role === 'authority' || user?.role === 'master-admin';
+}
+
+/** True only for the master admin. */
+export function isMasterAdmin(user: User | null): boolean {
+  return user?.role === 'master-admin';
 }
 
 type AuthState = {

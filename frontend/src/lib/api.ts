@@ -235,3 +235,51 @@ export function getAnalytics() {
 export function getHotspots() {
   return request<{ hotspots: Hotspot[] }>('/api/analytics/area');
 }
+
+/* ---------------- master-admin ---------------- */
+
+export type AdminUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'authority' | 'master-admin';
+  assignedArea: string | null;
+  assignedDept: string | null;
+};
+
+export type CreateAdminInput = {
+  name: string;
+  email: string;
+  password: string;
+  role: 'admin' | 'authority';
+  assignedArea?: string;
+  assignedDept?: string;
+};
+
+export type UpdateAdminInput = Partial<Omit<CreateAdminInput, 'email'>>;
+
+export function listAdminUsers() {
+  return request<{ users: AdminUser[] }>('/api/master-admin/users');
+}
+
+export function createAdminUser(input: CreateAdminInput) {
+  return request<{ user: AdminUser }>('/api/master-admin/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateAdminUser(id: string, input: UpdateAdminInput) {
+  return request<{ user: AdminUser }>(`/api/master-admin/users/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteAdminUser(id: string) {
+  return request<{ success: boolean }>(`/api/master-admin/users/${id}`, {
+    method: 'DELETE',
+  });
+}

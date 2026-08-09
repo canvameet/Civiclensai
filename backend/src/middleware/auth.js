@@ -48,6 +48,15 @@ export function requireAdmin(req, res, next) {
   next();
 }
 
+/** Rejects unless the caller is a master-admin. */
+export function requireMasterAdmin(req, res, next) {
+  if (!req.user) return res.status(401).json({ error: 'Not signed in' });
+  if (!req.user.isMasterAdmin()) {
+    return res.status(403).json({ error: 'Master admin access required' });
+  }
+  next();
+}
+
 /** Attaches req.user when a token is present, but never blocks the request. */
 export async function optionalAuth(req, _res, next) {
   try {

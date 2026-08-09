@@ -7,6 +7,7 @@ import { router as complaintsRouter } from './routes/complaints.js';
 import { router as socialRouter } from './routes/social.js';
 import { router as analyticsRouter } from './routes/analytics.js';
 import { router as authRouter } from './routes/auth.js';
+import { router as masterAdminRouter } from './routes/masterAdmin.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { runXScraper } from './services/xScraper.js';
 dotenv.config();
@@ -22,6 +23,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/complaints', complaintsRouter);
 app.use('/api/social', socialRouter);
 app.use('/api/analytics', analyticsRouter);
+app.use('/api/master-admin', masterAdminRouter);
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
 
 app.use(errorHandler);

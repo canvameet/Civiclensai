@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "nodemon -r dotenv/config src/app.js",
+    "dev": "npx nodemon -r dotenv/config src/app.js",
     "dev:mem": "node dev-server.js",
     "start": "node -r dotenv/config src/app.js",
     "seed": "node seed.js",

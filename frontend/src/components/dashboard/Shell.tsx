@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import type { Severity, Status } from '../../lib/api';
 import { STATUSES } from '../../lib/api';
-import { isAdmin, useAuth } from '../../lib/auth';
+import { isAdmin, isMasterAdmin, useAuth } from '../../lib/auth';
 
 /* ---------------- chrome ---------------- */
 
@@ -13,6 +13,12 @@ const CITIZEN_TABS = [{ to: '/citizen', label: 'Citizen' }];
 const ADMIN_TABS = [
   { to: '/authority', label: 'Authority' },
   { to: '/social', label: 'Social Intelligence' },
+];
+
+const MASTER_ADMIN_TABS = [
+  { to: '/authority', label: 'Authority' },
+  { to: '/social', label: 'Social Intelligence' },
+  { to: '/master-admin', label: 'Manage Admins' },
 ];
 
 export function DashboardShell({
@@ -31,7 +37,8 @@ export function DashboardShell({
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const admin = isAdmin(user);
-  const tabs = admin ? ADMIN_TABS : CITIZEN_TABS;
+  const master = isMasterAdmin(user);
+  const tabs = master ? MASTER_ADMIN_TABS : admin ? ADMIN_TABS : CITIZEN_TABS;
 
   return (
     <div className="min-h-screen w-full bg-ink text-white selection:bg-orange-500/30">

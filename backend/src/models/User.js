@@ -19,9 +19,12 @@ const userSchema = new mongoose.Schema(
     // accounts should be created as 'admin'.
     role: {
       type: String,
-      enum: ['citizen', 'authority', 'admin'],
+      enum: ['citizen', 'authority', 'admin', 'master-admin'],
       default: 'citizen',
     },
+    // Area and department assignment for authority/admin accounts
+    assignedArea: { type: String, default: null },
+    assignedDept: { type: String, default: null },
   },
   { timestamps: true },
 );
@@ -36,7 +39,12 @@ userSchema.methods.verifyPassword = function (plain) {
 
 /** True for roles allowed into the admin panel (authority + social feeds). */
 userSchema.methods.isAdmin = function () {
-  return this.role === 'admin' || this.role === 'authority';
+  return ['admin', 'authority', 'master-admin'].includes(this.role);
+};
+
+/** True only for the master admin. */
+userSchema.methods.isMasterAdmin = function () {
+  return this.role === 'master-admin';
 };
 
 /** Shape sent to the client — never includes the hash. */
@@ -46,6 +54,8 @@ userSchema.methods.toPublic = function () {
     name: this.name,
     email: this.email,
     role: this.role,
+    assignedArea: this.assignedArea,
+    assignedDept: this.assignedDept,
   };
 };
 

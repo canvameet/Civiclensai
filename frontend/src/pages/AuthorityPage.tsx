@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, RefreshCw } from 'lucide-react';
+import { Flame, MapPin, Building2, RefreshCw } from 'lucide-react';
 import {
   ApiError,
   CATEGORIES,
@@ -30,8 +30,16 @@ import {
   StatusBadge,
   StatusStepper,
 } from '../components/dashboard/Shell';
+import { useAuth } from '../lib/auth';
 
 export default function AuthorityPage() {
+  const { user } = useAuth();
+
+  // The scoped constraints come from the logged-in admin's profile.
+  // Master-admin / unscoped admins have null for both — they see everything.
+  const scopedArea = user?.assignedArea ?? null;
+  const scopedDept = user?.assignedDept ?? null;
+
   const [filters, setFilters] = useState<ComplaintFilters>({});
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -44,8 +52,14 @@ export default function AuthorityPage() {
   const load = useCallback(async () => {
     setError(null);
     try {
+      // Pass scoped filters — backend enforces them server-side too, but
+      // sending them here gives correct client-side UX immediately.
+      const activeFilters: ComplaintFilters = { ...filters };
+      if (scopedArea) activeFilters.area = scopedArea;
+      if (scopedDept) activeFilters.category = scopedDept;
+
       const [list, stats, spots] = await Promise.all([
-        listComplaints(filters),
+        listComplaints(activeFilters),
         getAnalytics(),
         getHotspots(),
       ]);
@@ -59,13 +73,12 @@ export default function AuthorityPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, scopedArea, scopedDept]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  // live updates — the stream only tells us *that* something changed, so refetch
   useEffect(() => {
     let active = true;
     const unsubscribe = subscribeToComplaints(() => {
@@ -80,7 +93,6 @@ export default function AuthorityPage() {
   }, [load]);
 
   async function handleStatus(id: string, status: Status) {
-    // optimistic — the row updates before the round trip, SSE reconciles after
     setComplaints((prev) =>
       prev.map((c) => (c._id === id ? { ...c, status } : c)),
     );
@@ -96,6 +108,8 @@ export default function AuthorityPage() {
   const setFilter = (key: keyof ComplaintFilters, value: string) =>
     setFilters((f) => ({ ...f, [key]: value || undefined }));
 
+  const isScoped = Boolean(scopedArea || scopedDept);
+
   return (
     <DashboardShell
       eyebrow="Authority Dashboard"
@@ -107,6 +121,17 @@ export default function AuthorityPage() {
       intro="Every report, sorted by severity and routed by AI. Status changes propagate to citizens instantly."
       actions={
         <div className="flex items-center gap-3">
+          {/* Scope badges — shown only for scoped admins */}
+          {scopedArea && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-400/25 bg-blue-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-blue-300">
+              <MapPin size={11} /> {scopedArea}
+            </span>
+          )}
+          {scopedDept && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-400/25 bg-purple-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-purple-300">
+              <Building2 size={11} /> {scopedDept}
+            </span>
+          )}
           {live && (
             <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1.5">
               <span className="relative flex h-1.5 w-1.5">
@@ -124,6 +149,24 @@ export default function AuthorityPage() {
         </div>
       }
     >
+      {/* Scope notice banner */}
+      {isScoped && (
+        <div className="mb-6 flex items-start gap-3 rounded-2xl border border-blue-400/20 bg-blue-500/8 px-5 py-4">
+          <MapPin size={14} className="mt-0.5 shrink-0 text-blue-400" />
+          <p className="text-sm font-light text-blue-200">
+            You are viewing{' '}
+            {scopedArea && (
+              <span className="font-semibold text-white">{scopedArea}</span>
+            )}
+            {scopedArea && scopedDept && ' · '}
+            {scopedDept && (
+              <span className="font-semibold text-white">{scopedDept} dept</span>
+            )}{' '}
+            issues only. Contact a master admin to change your scope.
+          </p>
+        </div>
+      )}
+
       {error && (
         <div className="mb-6">
           <ErrorNote>{error}</ErrorNote>
@@ -149,12 +192,30 @@ export default function AuthorityPage() {
         <div className="lg:col-span-3">
           <Panel className="p-7">
             <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Select
-                label="Category"
-                value={filters.category ?? ''}
-                options={CATEGORIES}
-                onChange={(v) => setFilter('category', v)}
-              />
+              {/* Area filter — locked for scoped admins */}
+              {!scopedArea ? (
+                <Select
+                  label="Area"
+                  value={filters.area ?? ''}
+                  options={['Navrangpura','Bopal','Satellite','Vastrapur','Kalupur','Prahladnagar','Other']}
+                  onChange={(v) => setFilter('area', v)}
+                />
+              ) : (
+                <LockedFilter label="Area" value={scopedArea} />
+              )}
+
+              {/* Category / dept filter — locked for scoped admins */}
+              {!scopedDept ? (
+                <Select
+                  label="Category"
+                  value={filters.category ?? ''}
+                  options={CATEGORIES}
+                  onChange={(v) => setFilter('category', v)}
+                />
+              ) : (
+                <LockedFilter label="Department" value={scopedDept} />
+              )}
+
               <Select
                 label="Severity"
                 value={filters.severity ?? ''}
@@ -167,20 +228,16 @@ export default function AuthorityPage() {
                 options={STATUSES}
                 onChange={(v) => setFilter('status', v)}
               />
-              <Select
-                label="Source"
-                value={filters.source ?? ''}
-                options={['citizen', 'twitter', 'reddit']}
-                onChange={(v) => setFilter('source', v)}
-              />
             </div>
 
             {loading ? (
               <Spinner label="Loading complaints…" />
             ) : complaints.length === 0 ? (
               <EmptyState>
-                No complaints match these filters. Seed the database or clear the
-                filters.
+                No complaints match these filters.
+                {isScoped
+                  ? ' No issues filed for your area/department yet.'
+                  : ' Seed the database or clear the filters.'}
               </EmptyState>
             ) : (
               <ul className="flex flex-col gap-3">
@@ -205,7 +262,7 @@ export default function AuthorityPage() {
           <div className="mb-5 flex items-center gap-2">
             <Flame size={14} className="text-orange-400" />
             <h2 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
-              Area hotspots
+              {scopedArea ? `${scopedArea} hotspots` : 'Area hotspots'}
             </h2>
           </div>
 
@@ -302,6 +359,21 @@ function Select({
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+/** A read-only filter chip shown when the admin is scoped to a fixed value. */
+function LockedFilter({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <label className={LABEL}>{label}</label>
+      <div className="flex items-center gap-2 rounded-xl border border-blue-400/20 bg-blue-500/10 px-4 py-2.5">
+        <span className="text-xs font-semibold text-blue-200">{value}</span>
+        <span className="ml-auto rounded-md border border-blue-400/20 bg-blue-500/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-widest text-blue-400">
+          locked
+        </span>
+      </div>
     </div>
   );
 }

@@ -26,13 +26,13 @@ export async function ensureAdmin({ email, password, name }) {
 
   if (existing) {
     existing.name = name;
-    existing.role = 'admin';
+    existing.role = 'master-admin';
     existing.passwordHash = passwordHash;
     await existing.save();
     return 'updated';
   }
 
-  await User.create({ name, email, passwordHash, role: 'admin' });
+  await User.create({ name, email, passwordHash, role: 'master-admin' });
   return 'created';
 }
 

@@ -2,7 +2,7 @@ import express from 'express';
 import Complaint from '../models/Complaint.js';
 import { classifyComplaint } from '../services/aiService.js';
 import { upload, toBase64 } from '../middleware/upload.js';
-import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { requireAuth, requireAdmin, optionalAuth } from '../middleware/auth.js';
 
 export const router = express.Router();
 
@@ -56,14 +56,30 @@ router.post('/', upload.single('image'), async (req, res, next) => {
 });
 
 // GET /api/complaints — list with filters
-router.get('/', async (req, res, next) => {
+router.get('/', optionalAuth, async (req, res, next) => {
   try {
     const { category, severity, status, area, source } = req.query;
     const filter = {};
-    if (category) filter.category = category;
+
+    // If the caller is a scoped admin, enforce their area/dept regardless of
+    // what the query string says — they cannot see outside their scope.
+    const scopedArea = req.user?.assignedArea || null;
+    const scopedDept = req.user?.assignedDept || null;
+
+    if (scopedArea) {
+      filter['location.area'] = scopedArea;
+    } else if (area) {
+      filter['location.area'] = area;
+    }
+
+    if (scopedDept) {
+      filter.department = scopedDept;
+    } else if (category) {
+      filter.category = category;
+    }
+
     if (severity) filter.severity = severity;
     if (status) filter.status = status;
-    if (area) filter['location.area'] = area;
     if (source) filter.source = source;
 
     const severityOrder = { Critical: 0, High: 1, Medium: 2, Low: 3 };
@@ -96,15 +112,23 @@ router.patch('/:id/status', requireAuth, requireAdmin, async (req, res, next) =>
     const validStatuses = ['Submitted', 'Verified', 'Assigned', 'In Progress', 'Resolved'];
     if (!validStatuses.includes(status)) return res.status(400).json({ error: 'Invalid status' });
 
-    const complaint = await Complaint.findByIdAndUpdate(
-      req.params.id,
-      {
-        status,
-        $push: { statusHistory: { status, note: note || '', changedAt: new Date() } }
-      },
-      { new: true }
-    );
+    // Scoped admins can only update complaints in their area/dept
+    const complaint = await Complaint.findById(req.params.id);
     if (!complaint) return res.status(404).json({ error: 'Not found' });
+
+    const scopedArea = req.user?.assignedArea || null;
+    const scopedDept = req.user?.assignedDept || null;
+    if (scopedArea && complaint.location?.area !== scopedArea) {
+      return res.status(403).json({ error: 'This complaint is outside your assigned area' });
+    }
+    if (scopedDept && complaint.department !== scopedDept) {
+      return res.status(403).json({ error: 'This complaint is outside your assigned department' });
+    }
+
+    complaint.status = status;
+    complaint.statusHistory.push({ status, note: note || '', changedAt: new Date() });
+    await complaint.save();
+
     res.json({ complaint });
   } catch (err) { next(err); }
 });

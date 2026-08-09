@@ -2,12 +2,14 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './lib/auth';
 import RequireAuth from './components/RequireAuth';
 import RequireAdmin from './components/RequireAdmin';
+import RequireMasterAdmin from './components/RequireMasterAdmin';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import CitizenPage from './pages/CitizenPage';
 import AuthorityPage from './pages/AuthorityPage';
 import SocialPage from './pages/SocialPage';
+import MasterAdminPage from './pages/MasterAdminPage';
 
 export default function App() {
   return (
@@ -41,6 +43,14 @@ export default function App() {
                 <RequireAdmin>
                   <SocialPage />
                 </RequireAdmin>
+              }
+            />
+            <Route
+              path="/master-admin"
+              element={
+                <RequireMasterAdmin>
+                  <MasterAdminPage />
+                </RequireMasterAdmin>
               }
             />
             <Route path="*" element={<LandingPage />} />
