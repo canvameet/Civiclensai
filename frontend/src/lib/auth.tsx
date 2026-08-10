@@ -44,6 +44,8 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+const BASE = import.meta.env.VITE_API_BASE ?? '';
+
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
 }
@@ -51,7 +53,7 @@ export function getToken() {
 async function authRequest<T>(path: string, body: unknown): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(path, {
+    res = await fetch(`${BASE}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -82,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     let cancelled = false;
-    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d) => {
         if (!cancelled) setUser(d.user);
