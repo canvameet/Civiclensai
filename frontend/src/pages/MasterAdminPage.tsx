@@ -4,7 +4,6 @@ import { Plus, Pencil, Trash2, X, ShieldCheck, User as UserIcon, Mail, Lock, Map
 import {
   ApiError,
   AREAS,
-  CATEGORIES,
   listAdminUsers,
   createAdminUser,
   updateAdminUser,
